@@ -229,7 +229,7 @@ static void ContinueToOldHandler(int sig, siginfo_t* si, void* ctx)
         }
     }
 
-    // If previous handler returned, force fatal exit (this should not happen.)
+    // If previous handler returned, force fatal exit
     signal(sig, SIG_DFL);
     syscall(SYS_tgkill, getpid(), gettid(), sig);
     _exit(128 + sig);
@@ -293,7 +293,7 @@ void Handler(int sig, siginfo_t *si, void *ptr)
         fd_print("Wrong patch/return address, code corruption\n");
         break;
     case SIGSTKFLT:
-        fd_print("Stack fault on coprocessor\n"); // We.. dont have it?
+        fd_print("Stack fault on coprocessor\n");
         break;
     case SIGTRAP:
         fd_print("Broken mod/patch (undefined behavior), debugger activated, mod/patch reached wrong address\n");
@@ -303,7 +303,6 @@ void Handler(int sig, siginfo_t *si, void *ptr)
     static Dl_info dlInfo;
     if(PC && dladdr((void*)PC, &dlInfo) != 0)
     {
-        // Success
         if(dlInfo.dli_fname)
         {
             fd_printf("Library base: " PTRFMT "\n", (uintptr_t)dlInfo.dli_fbase);
@@ -318,7 +317,6 @@ void Handler(int sig, siginfo_t *si, void *ptr)
     }
     else
     {
-        // Unsuccess
       label_unsuccess:
         fd_printf("Failed to get a library. Program counter: " PTRFMT, PC);
     }
@@ -352,7 +350,6 @@ void Handler(int sig, siginfo_t *si, void *ptr)
 
     fd_print("\n----------------------------------------------------\nRegisters:\n");
 
-    // dlInfo.dli_sname in register might point to the variable with corrupted name
     #define SHOWREG(__t, __v)   fd_printf(#__t ":\t" PTRNUMFMT "\t" PTRFMT, (uintptr_t)(__v), (uintptr_t)(__v)); \
                                 if((void*)(__v) && dladdr((void*)(__v), &dlRegInfo) != 0 && dlRegInfo.dli_fname) \
                                     fd_printf(" (%s + " PTRFMT ")", GetFilenamePart(dlRegInfo.dli_fname), ((uintptr_t)(__v) - (uintptr_t)dlRegInfo.dli_fbase) ); \
@@ -544,7 +541,6 @@ void Handler(int sig, siginfo_t *si, void *ptr)
     }
 
     fd_print("\n----------------------------------------------------\n\t\tEND OF REPORT\n----------------------------------------------------\n\n");
-    fd_print("If you`re having problems using OFFICIAL mods, please report about this problem in our OFFICIAL server:\n\t\thttps://discord.gg/2MY7W39kBg\nPlease follow the rules and head to the #help section!");
     close(g_nLogFileFd);
     
   skip_logging:
