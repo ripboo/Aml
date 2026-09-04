@@ -187,10 +187,8 @@ void ModsList::ProcessDependencies()
     ModInfo* info;
 
   label_run_dependencies_check:
-    //logger->Info("Checking dependencies from the start! Mods count: %d", modlist->GetModsNum());
     LIST_FOR_FAST(listMods)
     {
-        // If the mod is already ok or doesnt require check, depList = NULL
         depList = item->pModDesc->m_aDependencies;
         if(depList)
         {
@@ -219,7 +217,6 @@ void ModsList::ProcessDependencies()
                 }
             }
 
-            // Everything is okay, we dont need to check it again!
             item->pModDesc->m_aDependencies = NULL;
         }
     }
@@ -239,26 +236,14 @@ void ModsList::ProcessPreLoading()
             pLastModProcessed = desc;
 
             onModPreLoadFn = (OnModLoadFn)dlsym(handle, "OnModPreLoad");
-            //if(onModPreLoadFn == NULL) onModPreLoadFn = (OnModLoadFn)dlsym(handle, "_Z12OnModPreLoadv");
             if(onModPreLoadFn != NULL) onModPreLoadFn();
 
             desc->m_fnOnModLoaded = (OnModLoadFn)dlsym(handle, "OnModLoad");
-            //if(desc->m_fnOnModLoaded == NULL) desc->m_fnOnModLoaded = (OnModLoadFn)dlsym(handle, "_Z9OnModLoadv");
-
             desc->m_fnOnModUnloaded = (OnModLoadFn)dlsym(handle, "OnModUnload");
-            //if(desc->m_fnOnModUnloaded == NULL) desc->m_fnOnModUnloaded = (OnModLoadFn)dlsym(handle, "_Z11OnModUnloadv");
-
             desc->m_fnRequestUpdaterURL = (GetUpdaterURLFn)dlsym(handle, "OnUpdaterURLRequested");
-            //if(desc->m_fnRequestUpdaterURL == NULL) desc->m_fnRequestUpdaterURL = (GetUpdaterURLFn)dlsym(handle, "_Z21OnUpdaterURLRequestedv");
-
             desc->m_fnInterfaceAddedCB = (OnInterfaceAddedFn)dlsym(handle, "OnInterfaceAdded");
-            //if(desc->m_fnInterfaceAddedCB == NULL) desc->m_fnInterfaceAddedCB = (OnInterfaceAddedFn)dlsym(handle, "_Z16OnInterfaceAddedPKcPKv");
-
             desc->m_fnOnAllModsLoaded = (OnModLoadFn)dlsym(handle, "OnAllModsLoaded");
-            //if(desc->m_fnOnAllModsLoaded == NULL) desc->m_fnOnAllModsLoaded = (OnModLoadFn)dlsym(handle, "_Z15OnAllModsLoadedv");
-
             desc->m_fnGameCrashedCB = (OnGameCrashedFn)dlsym(handle, "OnGameCrash");
-            //if(desc->m_fnGameCrashedCB == NULL) desc->m_fnGameCrashedCB = (OnGameCrashedFn)dlsym(handle, "_Z11OnGameCrashv");
         }
     }
     logger->Info("Mods were preloaded!");
@@ -289,24 +274,8 @@ void ModsList::ProcessUnloading()
 
 void ModsList::ProcessUpdater()
 {
-    ModDesc* desc = NULL;
-    LIST_FOR_FAST(listMods)
-    {
-        desc = item->pModDesc;
-        pLastModProcessed = desc;
-        if(desc->m_fnRequestUpdaterURL)
-        {
-            const char* url = desc->m_fnRequestUpdaterURL();
-            if(DownloadFileToData(url))
-            {
-                ProcessData(desc);
-            }
-            else
-            {
-                logger->Error("Updater failed to determine an update info for %s, err %d", desc->m_pInfo->GUID(), g_nLatestDownloadErrorCode);
-            }
-        }
-    }
+    // Online updater disabled for offline operation
+    return;
 }
 
 void ModsList::ProcessCrash(const char* szLibName, int sig, int code, uintptr_t libaddr, mcontext_t* mcontext)
@@ -375,7 +344,6 @@ void ModsList::ListMods(_ListModsCallback cb, void* data, bool startWithLatest)
     char szGUID[sizeof(ModInfo::szGUID)], szVersion[sizeof(ModInfo::szVersion)];
     if(startWithLatest)
     {
-        // Start from the latest mod
         LIST_FOR_FAST(listMods)
         {
             ModInfo* info = item->pModInfo;
@@ -387,7 +355,6 @@ void ModsList::ListMods(_ListModsCallback cb, void* data, bool startWithLatest)
     }
     else
     {
-        // Start from AMLCore
         LIST_FOR_REVERSE_FAST(listMods)
         {
             ModInfo* info = item->pModInfo;
