@@ -18,8 +18,12 @@ static int g_nLogFileFd = -1;
 
 struct sigaction newSigaction[7];
 struct sigaction oldSigaction[7];
+
+// تعريف المتغير العام لإصلاح undefined symbol: g_bDumpThreadRegisters
+bool g_bDumpThreadRegisters = false;
+
 extern bool g_bSimplerCrashLog, g_bNoSPInLog, g_bNoModsInLog, g_bDumpAllThreads,
-            g_bMoreRegsInfo, g_bDumpThreadRegisters;
+            g_bMoreRegsInfo;
 extern int g_nAndroidSDKVersion;
 
 static stack_t stackstruct;
