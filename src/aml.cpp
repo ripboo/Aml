@@ -20,7 +20,7 @@
 
 #include <Gloss.h>
 
-#include <httputils.h>
+// #include <httputils.h>
 #include <cryptutils.h>
 JMD5 g_MD5;
 
@@ -402,14 +402,14 @@ void AML::ShowToast(bool longerDuration, const char* fmt, ...)
 
 bool AML::DownloadFile(const char* url, const char* saveto)
 {
-    if(!g_bEnableFileDownloads) return false;
-    return JHTTPUtils::DownloadFile(url, saveto, g_nDownloadTimeout, g_szUserAgent, true);
+    // Disabled HTTP utilities
+    return false;
 }
 
 bool AML::DownloadFileToData(const char* url, char* out, size_t outLen)
 {
-    if(!g_bEnableFileDownloads) return false;
-    return JHTTPUtils::DownloadFileToData(url, out, outLen, g_nDownloadTimeout, g_szUserAgent);
+    // Disabled HTTP utilities
+    return false;
 }
 
 void AML::FileMD5(const char* path, char* out, size_t out_len)
@@ -910,10 +910,6 @@ bool AML::FreeMemory(uintptr_t pointer)
 
 uintptr_t AML::ReadPointerChain(uintptr_t baseAddr, std::initializer_list<int> offsets)
 {
-    // Simplify walls of the code like that:
-    //   int data = *(int*)( *(uintptr_t*)( *(uintptr_t*)player + 0x40 ) + 0x60 )
-    //   Into this: int data = *(int*)aml->ReadPointerChain((uintptr_t)player, {0x40, 0x60})
-    //       The returned value is an address; cast and dereference it yourself for the final value.
     uintptr_t currentAddr = baseAddr;
     for(int offset : offsets)
     {
@@ -1203,7 +1199,6 @@ bool AML::MoveFile(const char* src, const char* dst)
 {
     if(!src || !dst || !src[0] || !dst[0]) return false;
 
-    // rename() works if src and dst are on the same filesystem
     if(rename(src, dst) == 0) return true;
 
     struct stat st;
@@ -1513,7 +1508,7 @@ uint32_t AML::GetStringHash(const char* str, size_t len)
     
     const uint8_t* data = (const uint8_t*)str;
     const int nblocks = len / 4;
-    uint32_t h1 = 0xDEADBEEF; // constant seed for AMLs Murmur3 implementation
+    uint32_t h1 = 0xDEADBEEF;
 
     const uint32_t c1 = 0xCC9E2D51, c2 = 0x1B873593;
 
@@ -1570,8 +1565,6 @@ uint32_t AML::GetCRC32(const void* str, size_t len)
     }
     return ~crc;
 }
-
-
 
 static AML amlLocal;
 IAML* aml = (IAML*)&amlLocal;
