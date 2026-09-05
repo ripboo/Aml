@@ -11,6 +11,8 @@
 #include <android/looper.h> // ALooper
 #include <dlfcn.h>
 #include <limits.h>
+#include <vector>
+#include <string>
 
 #include <aml.h>
 #include <defines.h>
@@ -231,6 +233,10 @@ void LoadMods(const char* path)
         logger->Info("Loading mods from %s", path);
         struct dirent *diread; void* handle;
         const char* gameName = HasFakeAppName() ? g_szFakeAppName : g_szAppName;
+        
+        // قائمة لتخزين أسماء الملفات الموجودة حالياً في مجلد المصدر (لتنظيف الملفات المحذوفة لاحقاً)
+        std::vector<std::string> sourceFiles;
+
         while ((diread = readdir(dir)) != NULL)
         {
             if(diread->d_name[0] == '.' &&
@@ -239,6 +245,9 @@ void LoadMods(const char* path)
             {
                 continue;
             }
+
+            sourceFiles.push_back(diread->d_name); // حفظ اسم الملف في القائمة
+
             int srcLen = snprintf(buf, sizeof(buf), "%s/%s", path, diread->d_name);
             int tmpLen = snprintf(dataBuf, sizeof(dataBuf), "%s/%s", g_szDataDir, diread->d_name);
             if(srcLen < 0 || srcLen >= (int)sizeof(buf) || tmpLen < 0 || tmpLen >= (int)sizeof(dataBuf))
@@ -247,7 +256,7 @@ void LoadMods(const char* path)
                 continue;
             }
 
-            // تحقق مما إذا كان يجب إرجاع نسخ الملف (فقط عند عدم وجوده أو عند وجود تحديث للمود)
+            // تحقق مما إذا كان يجب نسخ الملف (فقط عند عدم وجوده أو عند وجود تحديث للمود)
             struct stat srcStat, dstStat;
             bool shouldCopy = true;
 
@@ -310,9 +319,41 @@ void LoadMods(const char* path)
             {
                 dlclose(handle);
             }
-            // تم إزالة remove(dataBuf) للإنقاء على المودات دائماً
         }
         closedir(dir);
+
+        // --- إضافة ميزة: حذف الملفات من المجلد الداخلي إذا تم حذفها من المجلد الأساسي ---
+        DIR* dataDir = opendir(g_szDataDir);
+        if(dataDir != NULL)
+        {
+            while ((diread = readdir(dataDir)) != NULL)
+            {
+                if(diread->d_name[0] == '.' && (diread->d_name[1] == '.' || diread->d_name[1] == 0)) continue;
+                if(!EndsWithSO(diread->d_name)) continue;
+
+                bool foundInSource = false;
+                for(const auto& srcFile : sourceFiles)
+                {
+                    if(srcFile == diread->d_name)
+                    {
+                        foundInSource = true;
+                        break;
+                    }
+                }
+
+                // إذا لم يتم العثور على الملف في مجلد المصدر، فهذا يعني أن المستخدم حذفه، لذا نقوم بحذفه من المجلد الداخلي أيضاً
+                if(!foundInSource)
+                {
+                    char deletePath[AML_PATH_MAX];
+                    snprintf(deletePath, sizeof(deletePath), "%s/%s", g_szDataDir, diread->d_name);
+                    if(remove(deletePath) == 0)
+                    {
+                        logger->Info("Cleaned up removed mod from data: %s", diread->d_name);
+                    }
+                }
+            }
+            closedir(dataDir);
+        }
     }
     else
     {
