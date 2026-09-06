@@ -22,7 +22,7 @@ jobs:
       run: |
         echo "Applying full NDK r27 compatibility fixes for ARMPatch and AML..."
         
-        # 1. تصحيح أخطاء Gloss المتغيرات في ARMPatch
+        # 1. تصحيح أخطاء Gloss المتغيرات والدوال في ARMPatch
         sed -i 's/\$ARM/I_ARM/g' ARMPatch/armpatch_src/ARMPatch.cpp
         sed -i 's/\$THUMB/I_THUMB/g' ARMPatch/armpatch_src/ARMPatch.cpp
         sed -i 's/Gloss::Inst::branchs::/Gloss::Inst::Branchs::/g' ARMPatch/armpatch_src/ARMPatch.cpp
@@ -34,7 +34,11 @@ jobs:
         sed -i 's/\$THUMB/I_THUMB/g' src/aml.cpp
         sed -i 's/\$ARM/I_ARM/g' src/aml.cpp
 
-        # 3. إزالة خيار -mfloat-abi المسبب للمشكلة لمعمارية arm64 من جميع ملفات .mk في المشروع
+        # 3. إصلاح استدعاء GlossHookInternal في src/aml.cpp لتتوافق مع 5 وسائط بدلاً من 4
+        sed -i 's/GlossHookInternal((void\*)addr, (GlossHookInternalCallback)newFn, doShortHook,/GlossHookInternal((void\*)addr, (GlossHookInternalCallback)newFn, nullptr, doShortHook,/g' src/aml.cpp
+        sed -i 's/GlossHookInternal(fnAddress, (GlossHookInternalCallback)newFn, doShortHook,/GlossHookInternal(fnAddress, (GlossHookInternalCallback)newFn, nullptr, doShortHook,/g' src/aml.cpp
+
+        # 4. إزالة خيار -mfloat-abi المسبب للمشكلة لمعمارية arm64 من جميع ملفات .mk في المشروع
         find . -type f \( -name "*.mk" \) -exec sed -i '/-mfloat-abi=/d' {} +
 
     - name: Building ARMPatch...
