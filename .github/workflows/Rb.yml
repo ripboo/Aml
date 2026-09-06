@@ -33,11 +33,10 @@ jobs:
 
       - name: Prepare Directories and Script
         run: |
-          # إنشاء المجلدات مسبقاً لمنع خطأ Directory not found
           mkdir -p "$PWD/ghidra_project"
           mkdir -p "$PWD/output_asm"
           
-          # إنشاء سكريبت بايثون لاستخراج الأكواد
+          # سكريبت بايثون معدل ليقوم بتصدير كافة الدوال في ملف نصي واحد ضخم فقط
           cat << 'EOF' > export_script.py
           import os
           from ghidra.program.model.listing import CodeUnit
@@ -46,8 +45,9 @@ jobs:
           listing = current_program.getListing()
           
           output_dir = os.environ.get("OUTPUT_DIR", "/tmp")
-          
           all_asm_path = os.path.join(output_dir, "complete_disassembly.asm")
+          
+          print("Starting export of all functions into a single file...")
           with open(all_asm_path, "w") as f_all:
               function_manager = current_program.getFunctionManager()
               functions = function_manager.getFunctions(True)
@@ -55,16 +55,18 @@ jobs:
               for func in functions:
                   func_name = func.getName()
                   func_entry = func.getEntryPoint()
-                  f_all.write("\n\n--- Function: %s at %s ---\n" % (func_name, func_entry))
+                  f_all.write("\n\n==================================================\n")
+                  f_all.write("Function: %s at %s\n" % (func_name, func_entry))
+                  f_all.write("==================================================\n")
                   
-                  func_file_path = os.path.join(output_dir, "%s_%s.asm" % (func_name, func_entry))
-                  with open(func_file_path, "w") as f_func:
+                  try:
                       code_units = listing.getCodeUnits(func.getBody(), True)
                       for cu in code_units:
-                          line = str(cu) + "\n"
-                          f_all.write(line)
-                          f_func.write(line)
-          print("Export completed successfully!")
+                          f_all.write(str(cu) + "\n")
+                  except Exception as e:
+                      f_all.write("; Error reading function body: %s\n" % str(e))
+                      
+          print("Export completed successfully into a single file!")
           EOF
 
       - name: Run Ghidra Headless Analysis & Export ASM
@@ -81,10 +83,11 @@ jobs:
 
       - name: Compress Output Files
         run: |
-          zip -r assembly_results.zip output_asm/
+          cd output_asm
+          zip -r ../assembly_result_single.zip complete_disassembly.asm
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: SO-Assembly-Output
-          path: assembly_results.zip
+          name: SO-Single-Assembly-File
+          path: assembly_result_single.zip
