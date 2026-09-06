@@ -38,9 +38,8 @@ jobs:
         sed -i 's/GlossHookInternal((void\*)addr, (GlossHookInternalCallback)newFn, doShortHook,/GlossHookInternal((void\*)addr, (GlossHookInternalCallback)newFn, nullptr, doShortHook,/g' src/aml.cpp
         sed -i 's/GlossHookInternal(fnAddress, (GlossHookInternalCallback)newFn, doShortHook,/GlossHookInternal(fnAddress, (GlossHookInternalCallback)newFn, nullptr, doShortHook,/g' src/aml.cpp
 
-        # 4. السماح بكرار الرمز (Duplicate Symbols) لتجنب توقف البناء بسبب تداخل xDL
-        echo "LOCAL_LDFLAGS += -Wl,--allow-multiple-definition" >> ./Android.mk
-        echo "LOCAL_LDFLAGS += -Wl,--allow-multiple-definition" >> ./ARMPatch/armpatch_src/Android.mk
+        # 4. إضافة خيار السماح بتكرار الرموز بطريقة صحيحة عبر Application.mk
+        echo "APP_LDFLAGS += -Wl,--allow-multiple-definition" >> ./Application.mk
 
         # 5. إزالة خيار -mfloat-abi المسبب للمشكلة لمعمارية arm64 من جميع ملفات .mk
         find . -type f \( -name "*.mk" \) -exec sed -i '/-mfloat-abi=/d' {} +
