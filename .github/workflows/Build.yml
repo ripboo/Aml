@@ -13,10 +13,10 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Installing Android NDK (r24)...
+    - name: Installing Android NDK (r27)...
       uses: nttld/setup-ndk@v1
       with:
-        ndk-version: r24
+        ndk-version: r27
 
     - name: Building ARMPatch...
       run: ndk-build NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=./ARMPatch/armpatch_src/Android.mk NDK_APPLICATION_MK=./ARMPatch/armpatch_src/Application.mk NDK_DEBUG=0 -j12
