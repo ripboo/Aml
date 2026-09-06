@@ -38,17 +38,14 @@ jobs:
         sed -i 's/GlossHookInternal((void\*)addr, (GlossHookInternalCallback)newFn, doShortHook,/GlossHookInternal((void\*)addr, (GlossHookInternalCallback)newFn, nullptr, doShortHook,/g' src/aml.cpp
         sed -i 's/GlossHookInternal(fnAddress, (GlossHookInternalCallback)newFn, doShortHook,/GlossHookInternal(fnAddress, (GlossHookInternalCallback)newFn, nullptr, doShortHook,/g' src/aml.cpp
 
-        # 4. إضافة خيار السماح بتكرار الرموز بطريقة صحيحة عبر Application.mk
-        echo "APP_LDFLAGS += -Wl,--allow-multiple-definition" >> ./Application.mk
-
-        # 5. إزالة خيار -mfloat-abi المسبب للمشكلة لمعمارية arm64 من جميع ملفات .mk
+        # 4. إزالة خيار -mfloat-abi المسبب للمشكلة لمعمارية arm64 من جميع ملفات .mk
         find . -type f \( -name "*.mk" \) -exec sed -i '/-mfloat-abi=/d' {} +
 
     - name: Building ARMPatch...
-      run: ndk-build NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=./ARMPatch/armpatch_src/Android.mk NDK_APPLICATION_MK=./ARMPatch/armpatch_src/Application.mk NDK_DEBUG=0 -j12
+      run: ndk-build NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=./ARMPatch/armpatch_src/Android.mk NDK_APPLICATION_MK=./ARMPatch/armpatch_src/Application.mk NDK_DEBUG=0 APP_LDFLAGS="-Wl,--allow-multiple-definition" -j12
       
     - name: Building AML...
-      run: ndk-build NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=./Android.mk NDK_APPLICATION_MK=./Application.mk NDK_DEBUG=0 -j12
+      run: ndk-build NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=./Android.mk NDK_APPLICATION_MK=./Application.mk NDK_DEBUG=0 APP_LDFLAGS="-Wl,--allow-multiple-definition" -j12
 
     - name: Finished. Uploading the results.
       uses: actions/upload-artifact@v4
