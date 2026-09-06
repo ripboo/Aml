@@ -18,6 +18,13 @@ jobs:
       with:
         ndk-version: r27
 
+    - name: Fix ARMPatch compatibility with NDK r27 / Gloss
+      run: |
+        echo "Applying compatibility fixes for NDK r27..."
+        sed -i 's/\$ARM/I_ARM/g' ARMPatch/armpatch_src/ARMPatch.cpp
+        sed -i 's/\$THUMB/I_THUMB/g' ARMPatch/armpatch_src/ARMPatch.cpp
+        sed -i 's/Gloss::Inst::branchs::/Gloss::Inst::Branchs::/g' ARMPatch/armpatch_src/ARMPatch.cpp
+
     - name: Building ARMPatch...
       run: ndk-build NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=./ARMPatch/armpatch_src/Android.mk NDK_APPLICATION_MK=./ARMPatch/armpatch_src/Application.mk NDK_DEBUG=0 -j12
       
