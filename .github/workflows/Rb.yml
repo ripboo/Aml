@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       so_file_path:
-        description: 'اسم ملف الـ .so الموجود في المستودع (مثال: libGTASA.so)'
+        description: 'اسم ملف الـ .so الموجود في المستودع (مثال: libplugin_fastman92limitAdjuster.so)'
         required: true
         default: 'libplugin_fastman92limitAdjuster.so'
 
@@ -31,25 +31,22 @@ jobs:
           unzip -q ghidra_${GHIDRA_VERSION}_PUBLIC_${GHIDRA_RELEASE}.zip
           echo "GHIDRA_ROOT=$PWD/ghidra_${GHIDRA_VERSION}_PUBLIC" >> $GITHUB_ENV
 
-      - name: Run Ghidra Headless Analysis & Export ASM
+      - name: Prepare Directories and Script
         run: |
-          SO_FILE="${{ github.event.inputs.so_file_path }}"
-          PROJECT_DIR="$PWD/ghidra_project"
-          OUTPUT_DIR="$PWD/output_asm"
-          mkdir -p "$OUTPUT_DIR"
-
-          # إنشاء سكريبت بايثون داخلي لتخزين واستخراج الـ Assembly والدوال
+          # إنشاء المجلدات مسبقاً لمنع خطأ Directory not found
+          mkdir -p "$PWD/ghidra_project"
+          mkdir -p "$PWD/output_asm"
+          
+          # إنشاء سكريبت بايثون لاستخراج الأكواد
           cat << 'EOF' > export_script.py
           import os
           from ghidra.program.model.listing import CodeUnit
-          from ghidra.util.task import TaskMonitor
 
           current_program = getCurrentProgram()
           listing = current_program.getListing()
           
           output_dir = os.environ.get("OUTPUT_DIR", "/tmp")
           
-          # استخراج كود الـ Assembly لكل دالة وملف نصي شامل
           all_asm_path = os.path.join(output_dir, "complete_disassembly.asm")
           with open(all_asm_path, "w") as f_all:
               function_manager = current_program.getFunctionManager()
@@ -58,10 +55,9 @@ jobs:
               for func in functions:
                   func_name = func.getName()
                   func_entry = func.getEntryPoint()
-                  f_all.write(عنصر "\n\n--- Function: %s at %s ---\n" % (func_name, func_entry))
+                  f_all.write("\n\n--- Function: %s at %s ---\n" % (func_name, func_entry))
                   
-                  # إنشاء ملف مستقل لكل دالة لسهولة القراءة
-                  func_file_path = os.path.join(output_dir, f"{func_name}_{func_entry}.asm")
+                  func_file_path = os.path.join(output_dir, "%s_%s.asm" % (func_name, func_entry))
                   with open(func_file_path, "w") as f_func:
                       code_units = listing.getCodeUnits(func.getBody(), True)
                       for cu in code_units:
@@ -71,14 +67,17 @@ jobs:
           print("Export completed successfully!")
           EOF
 
-          # تشغيل Ghidra في الوضع الصامت (Headless) لتحليل الملف واستخراج الأكواد
+      - name: Run Ghidra Headless Analysis & Export ASM
+        run: |
+          SO_FILE="${{ github.event.inputs.so_file_path }}"
+          PROJECT_DIR="$PWD/ghidra_project"
+          
           $GHIDRA_ROOT/support/analyzeHeadless "$PROJECT_DIR" TempProj \
             -import "$SO_FILE" \
             -scriptPath "$PWD" \
             -postScript export_script.py
-
         env:
-          OUTPUT_DIR: ${{ github.env }} # سيتم حفظ الملفات هنا
+          OUTPUT_DIR: ${{ github.workspace }}/output_asm
 
       - name: Compress Output Files
         run: |
